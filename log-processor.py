@@ -71,7 +71,7 @@ def lambda_handler(event, context):
                 #  Send SNS Alert
                 sns.publish(
                     TopicArn=SNS_TOPIC_ARN,
-                    Message=f"🚨 Alert: {issue_type} in {service} | {log}"
+                    Message=f"Alert: {issue_type} in {service} | {log}"
                 )
 
         except Exception as e:
