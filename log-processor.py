@@ -21,20 +21,20 @@ def lambda_handler(event, context):
 
     for record in event['Records']:
         try:
-            # 🔹 Decode Kinesis data
+            #  Decode Kinesis data
             payload = base64.b64decode(record['kinesis']['data'])
             log = json.loads(payload)
 
-            # 🔹 Extract fields
+            #  Extract fields
             level = log.get('level')
             latency = log.get('latency')
             service = log.get('service')
             timestamp = log.get('timestamp')
 
-            # 🔹 Current time for partitioning
+            #  Current time for partitioning
             now = datetime.utcnow()
 
-            # 🔥 Partitioned S3 key (IMPORTANT)
+            #  Partitioned S3 key (IMPORTANT)
             s3_key = (
                 f"year={now.year}/"
                 f"month={str(now.month).zfill(2)}/"
@@ -43,14 +43,14 @@ def lambda_handler(event, context):
                 f"log-{context.aws_request_id}.json"
             )
 
-            # 🔹 Store ALL logs in S3
+            #  Store ALL logs in S3
             s3.put_object(
                 Bucket=BUCKET_NAME,
                 Key=s3_key,
                 Body=json.dumps(log)
             )
 
-            # 🔥 Anomaly Detection Logic
+            #  Anomaly Detection Logic
             is_error = level == "ERROR"
             is_slow = latency and latency > 1000
 
@@ -58,7 +58,7 @@ def lambda_handler(event, context):
 
                 issue_type = "ERROR" if is_error else "HIGH_LATENCY"
 
-                # 🔹 Store in DynamoDB
+                # Store in DynamoDB
                 table.put_item(
                     Item={
                         "log_id": context.aws_request_id,
@@ -68,7 +68,7 @@ def lambda_handler(event, context):
                     }
                 )
 
-                # 🔹 Send SNS Alert
+                #  Send SNS Alert
                 sns.publish(
                     TopicArn=SNS_TOPIC_ARN,
                     Message=f"🚨 Alert: {issue_type} in {service} | {log}"
